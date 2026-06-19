@@ -25,6 +25,8 @@ class Item:
     def __init__(self, name, cat, stock=0):
         self.name = name
         self.cat = cat
-        self.stock = 0
+        self.stock = stock
+
+
 
 
