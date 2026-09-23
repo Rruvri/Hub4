@@ -8,8 +8,11 @@ from PyQt6.QtWidgets import (QApplication, QLabel,
                              QCalendarWidget, QDateEdit,
                              QDateTimeEdit, QCheckBox,
                              QVBoxLayout, QListWidget, 
-                             QPushButton)
-from PyQt6.QtCore import (QDate, QDateTime)
+                             QPushButton, QTabWidget,
+                             QTextEdit, QListWidgetItem,
+                             QListView, QLayoutItem, QLayout)
+from PyQt6.QtCore import (QDate, QDateTime, QAbstractListModel, Qt, QModelIndex)
+from PyQt6.QtGui import (QColor, QBrush, QImage)
 
 from calendar_dt import current_date
 #import saves
@@ -128,12 +131,39 @@ print(task_data)
 
 #____________________________GUI____________________________
 
+class ActiveTaskModel(QAbstractListModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, *kwargs)
+
+        self.tasks = task_data["open_tasks"]
+
+    def data(self, index, role):
+        target = self.tasks[index.row()]
+
+        if role == Qt.ItemDataRole.DisplayRole:
+            return target.title
+
+    def rowCount(self, index=QModelIndex()):
+        return len(self.tasks)
+
+    def add(self, task):
+        self.tasks.append(task)
+        sort_open_tasks()
+        return self.layoutChanged.emit()
+    
+    
+
 
 class TaskWidget(QWidget):
     def __init__(self):
         super().__init__()
 
+        
+
         task_layout = QHBoxLayout()
+        self.active_tasks_model = ActiveTaskModel()
+        
+
 
 
         #task entry/creation _________________________________
@@ -161,14 +191,21 @@ class TaskWidget(QWidget):
         self.task_entry_form.addRow(self.save_tasks_btn)
 
 
+        RAVI YOU WERE HERE REJIGGING TO MODEL
+
         #task list _________________________________
-        self.task_list_view = QListWidget()
-        self.refresh_task_gui()
-        self.task_list_view.currentItemChanged.connect(self.display_task)
+        #self.task_list_view = QListWidget()
+        #self.refresh_task_gui()
+        self.active_tasks_view = QListView()
+        self.active_tasks_view.setModel(self.active_tasks_model)
+        self.active_tasks_selection_model = self.active_tasks_view.selectionModel()
+
+        #self.task_list_view.currentItemChanged.connect(self.display_task)
         
 
         task_layout.addLayout(self.task_entry_form)
-        task_layout.addWidget(self.task_list_view)
+        #task_layout.addWidget(self.task_list_view)
+        task_layout.addWidget(self.active_tasks_view)
 
         self.setLayout(task_layout)
         print(task_data["cats"])
@@ -199,7 +236,7 @@ class TaskWidget(QWidget):
             else:                
                 create_task(task_title, task_date, cat=task_cat)
                 
-                if task_cat and task_cat not in task_data["cats"]:
+                if task_cat and (task_cat not in task_data["cats"]):
                     task_data["cats"].append(task_cat)    
         return self.refresh_task_gui()
 
